@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symptom-Based Diagnosis System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: url('samuel.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+        h1 {
+            color: #00b4d8;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+        .language-toggle {
+            margin-bottom: 15px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            color: #ffffff;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1em;
+            font-weight: bold;
+            color: #fff;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="language-toggle">
+            <label for="languageSelect">Select Language / Hitamo Ururimi:</label>
+            <select id="languageSelect" onchange="changeLanguage()">
+                <option value="en">English</option>
+                <option value="rw">Kinyarwanda</option>
+            </select>
+        </div>
+
+        <h1 id="title">Symptom-Based Diagnosis System</h1>
+
+        <form id="symptomForm">
+            <label for="symptoms" id="symptomLabel">Enter Symptoms:</label>
+            <input type="text" id="symptoms" name="symptoms" placeholder="e.g., fever, headache" required><br>
+            <button type="button" onclick="diagnose()" id="diagnoseButton">Diagnose</button>
+        </form>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        // Diseases with symptoms in both English and Kinyarwanda
+        const diseases = {
+            "Monkeypox": {
+                en: ["fever", "headache", "muscle aches", "backache", "swollen lymph nodes", "tired", "rash"],
+                rw: ["umuriro", "umutwe", "kuribwa kw'imitsi", "kuribwa umugongo", "kubyimba imitsi", "kunanirwa", "uburibwe"]
+            },
+            "Tuberculosis (TB)": {
+                en: ["chills", "fever", "fatigue", "chronic cough", "weight loss", "night sweats", "hemoptysis"],
+                rw: ["guhinda umushyitsi", "umuriro", "kunanirwa", "inkorora idakira", "gutakaza ibiro", "gucura ibyuya nijoro", "gusekamo amaraso"]
+            },
+            "Meningitis": {
+                en: ["fever", "chills", "headache", "stiff neck", "achy joints", "lethargy", "altered mental status", "vomiting", "seizures"],
+                rw: ["umuriro", "guhinda umushyitsi", "umutwe", "ijosi rigoramye", "kuribwa mu ngingo", "kunanirwa", "uburwayi bwo mu mutwe", "kuruka", "kugagara"]
+            },
+            "Measles": {
+                en: ["fever", "conjunctivitis", "swollen eyelids", "photophobia", "malaise", "cough", "rash"],
+                rw: ["umuriro", "kubabara mu maso", "kubyimba amaso", "gutinya urumuri", "kunanirwa", "inkorora", "uburibwe"]
+            },
+            "Malaria": {
+                en: ["fever", "chills", "discomfort", "headache", "nausea", "vomiting", "diarrhea", "abdominal pain", "muscle or joint pain"],
+                rw: ["umuriro", "guhinda umushyitsi", "kunanirwa", "umutwe", "guhuma", "kuruka", "impiswi", "kuribwa mu nda", "kuribwa imitsi cyangwa ingingo"]
+            }
+        };
+
+        // Translations for UI text
+        const translations = {
+            en: {
+                title: "Symptom-Based Diagnosis System",
+                symptomLabel: "Enter Symptoms:",
+                diagnoseButton: "Diagnose",
+                resultUnknown: "Unknown Disease",
+                resultPrompt: "Please check symptoms and try again.",
+                matchingSymptoms: "Matching Symptoms Count:"
+            },
+            rw: {
+                title: "Sisitemu yo Kumenya Indwara Hagendewe ku Bimenyetso",
+                symptomLabel: "Injiza Ibimenyetso:",
+                diagnoseButton: "Saka Indwara",
+                resultUnknown: "Indwara Itazwi",
+                resultPrompt: "Nyamuneka ongera ugenzure ibimenyetso wongere.",
+                matchingSymptoms: "Umubare w'Ibimenyetso Bihura:"
+            }
+        };
+
+        // Set default language to English
+        let currentLanguage = 'en';
+
+        // Function to diagnose based on symptoms
+        function diagnose() {
+            const symptomsInput = document.getElementById('symptoms').value.trim().toLowerCase();
+            const inputSymptoms = symptomsInput.split(',').map(symptom => symptom.trim());
+
+            let bestMatchDisease = translations[currentLanguage].resultUnknown;
+            let bestMatchCount = 0;
+            let diseaseInfo = translations[currentLanguage].resultPrompt;
+
+            for (const [disease, symptoms] of Object.entries(diseases)) {
+                const matchCount = symptoms[currentLanguage].filter(symptom => inputSymptoms.includes(symptom)).length;
+
+                if (matchCount > bestMatchCount) {
+                    bestMatchCount = matchCount;
+                    bestMatchDisease = disease;
+                    diseaseInfo = `${bestMatchDisease}. ${translations[currentLanguage].matchingSymptoms} ${bestMatchCount}`;
+                }
+            }
+
+            document.getElementById('result').innerHTML = `
+                <p><strong>${translations[currentLanguage].resultUnknown}:</strong> ${bestMatchDisease}</p>
+                <p>${diseaseInfo}</p>
+            `;
+        }
+
+        // Function to switch language
+        function changeLanguage() {
+            currentLanguage = document.getElementById("languageSelect").value;
+            document.getElementById("title").innerText = translations[currentLanguage].title;
+            document.getElementById("symptomLabel").innerText = translations[currentLanguage].symptomLabel;
+            document.getElementById("diagnoseButton").innerText = translations[currentLanguage].diagnoseButton;
+        }
+
+        // Set initial language
+        changeLanguage();
+    </script>
+</body>
+</html>
